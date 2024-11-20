@@ -85,5 +85,14 @@ Verify the primary and secondary DNS server configurations.
 
 ---
 
+## Run as a service
+If you want to run it as a service you have to the following steps:
+
+```bash
+wget https://raw.githubusercontent.com/bednark/dns-proxy/refs/tags/v1.0.1/install.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
 ## Contribution
 Feel free to report issues or submit pull requests to improve this tool.
