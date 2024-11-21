@@ -5,7 +5,7 @@ from pythonping import ping
 
 def check_health(client):
   while True:
-    if client['domain'] in settings.HEALTH_CHECKS:
+    if client['domain'] in settings.domain_health.keys():
       host = client['ip']
       for _ in range(settings.HEALTH_CHECK_MAX_RETRIES):
         try:
@@ -29,7 +29,9 @@ def forward_dns(data, server):
     sock.close()
 
 def get_base_domain(domain):
-  for base_domain, _ in settings.HEALTH_CHECKS:
+  if domain in settings.domain_health.keys():
+    return domain
+  for base_domain in settings.domain_health.keys():
     if domain.endswith(base_domain):
       return base_domain
   return None
@@ -41,7 +43,7 @@ def handle_request(data, addr, sock):
   except:
     settings.logger.error('Error parsing DNS request')
     return
-
+  
   base_domain = get_base_domain(domain)
   if base_domain:
     target_server = settings.PRIMARY_DNS if settings.domain_health[base_domain] else settings.SECONDARY_DNS
@@ -55,10 +57,11 @@ def handle_request(data, addr, sock):
     settings.logger.info('No response from DNS server')
 
 def start_server(port):
+  settings.logger.info('DNS server is starting')
   try:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('0.0.0.0', port))
-    settings.logger.info(f'Starting DNS server on port {port}')
+    settings.logger.info(f'DNS server is litening on {port}')
   except:
     settings.logger.error('Error binding DNS server to port')
     return
