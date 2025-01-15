@@ -9,10 +9,11 @@ def check_health(client):
       host = client['ip']
       for _ in range(settings.HEALTH_CHECK_MAX_RETRIES):
         try:
-          response = ping(host, timeout=settings.HEALTH_CHECK_TIMEOUT, count=5)
+          response = ping(host, timeout=settings.HEALTH_CHECK_TIMEOUT, count=5, interval=0.3)
           settings.domain_health[client['domain']] = response.success()
+          break
         except:
-          settings.domain_health[client['domain']] =False
+          settings.domain_health[client['domain']] = False
     time.sleep(settings.HEALTH_CHECK_INTERVAL)
 
 def forward_dns(data, server):
@@ -30,20 +31,20 @@ def forward_dns(data, server):
 
 def get_base_domain(domain):
   if domain in settings.domain_health.keys():
-    return domain
+    return domain.lower()
   for base_domain in settings.domain_health.keys():
     if domain.endswith(base_domain):
-      return base_domain
+      return base_domain.lower()
   return None
 
 def handle_request(data, addr, sock):
   try:
     request = DNSRecord.parse(data)
-    domain = str(request.q.qname).strip('.')
+    domain = str(request.q.qname).strip('.').lower()
   except:
     settings.logger.error('Error parsing DNS request')
     return
-  
+
   base_domain = get_base_domain(domain)
   if base_domain:
     target_server = settings.PRIMARY_DNS if settings.domain_health[base_domain] else settings.SECONDARY_DNS
@@ -90,7 +91,7 @@ def args_validator(health_checks_path):
     settings.HEALTH_CHECK_TIMEOUT = float(settings.HEALTH_CHECK_TIMEOUT)
   except:
     return 'Health check timeout has to be a float'
-  
+
   dns_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$'
   settings.PRIMARY_DNS = settings.PRIMARY_DNS if ':' in settings.PRIMARY_DNS else settings.PRIMARY_DNS + ':53'
   settings.SECONDARY_DNS = settings.SECONDARY_DNS if ':' in settings.SECONDARY_DNS else settings.SECONDARY_DNS + ':53'
@@ -105,7 +106,7 @@ Allowed pattern: <ip>:<port> or <ip>'''
 
   if not os.path.exists(health_checks_path):
     return 'Health checks file not found'
-  
+
   try:
     with open(health_checks_path, 'r') as file:
       yaml_output = yaml.safe_load(file)

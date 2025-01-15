@@ -1,7 +1,7 @@
 #!/bin/bash
 
 install() {
-  VERSION="v1.0.1"
+  VERSION="v1.0.2"
   BIN_URL="https://github.com/bednark/dns-proxy/releases/download/$VERSION/dns-proxy"
   SERVICE_FILE="/etc/systemd/system/dns-proxy.service"
 
