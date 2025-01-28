@@ -30,12 +30,16 @@ def forward_dns(data, server):
     sock.close()
 
 def get_base_domain(domain):
-  if domain in settings.domain_health.keys():
-    return domain.lower()
-  for base_domain in settings.domain_health.keys():
-    if domain.endswith(base_domain):
+  domain_splitted = domain.split('.')
+  if not domain.startswith('!'):
+    for i in range(len(domain_splitted)):
+      base_domain = '.'.join(domain_splitted[i:])
+      if base_domain in settings.EXCLUDE:
+        return None
+  for i in range(1, len(domain_splitted)):
+    base_domain = '.'.join(domain_splitted[i:])
+    if base_domain in settings.domain_health.keys():
       return base_domain.lower()
-  return None
 
 def handle_request(data, addr, sock):
   try:
@@ -125,7 +129,16 @@ Allowed pattern: <ip>:<port> or <ip>'''
         settings.domain_health[item['domain']] = True
         if len(item) > 2:
           raise Exception('Too many fields in health check item')
-      settings.HEALTH_CHECKS= yaml_output['health_checks']
+      
+      if 'exclude' in yaml_output and not isinstance(yaml_output['exclude'], list):
+        raise Exception('Exclude field must be a list')
+      
+      for domain in yaml_output['exclude']:
+        if not isinstance(domain, str):
+          raise Exception('Exclude field must contain only strings')
+
+      settings.HEALTH_CHECKS = yaml_output['health_checks']
+      settings.EXCLUDE = yaml_output['exclude']
   except yaml.YAMLError as e:
     return 'Invalid health check YAML file'
   except Exception as e:
