@@ -11,7 +11,9 @@ def check_health(client):
         try:
           response = ping(host, timeout=settings.HEALTH_CHECK_TIMEOUT, count=5, interval=0.3)
           settings.domain_health[client['domain']] = response.success()
-          break
+
+          if settings.domain_health[client['domain']]:
+            break
         except:
           settings.domain_health[client['domain']] = False
     time.sleep(settings.HEALTH_CHECK_INTERVAL)
@@ -31,12 +33,12 @@ def forward_dns(data, server):
 
 def get_base_domain(domain):
   domain_splitted = domain.split('.')
-  if not domain.startswith('!'):
-    for i in range(len(domain_splitted)):
-      base_domain = '.'.join(domain_splitted[i:])
-      if base_domain in settings.EXCLUDE:
-        return None
-  for i in range(1, len(domain_splitted)):
+  for i in range(len(domain_splitted)):
+    base_domain = '.'.join(domain_splitted[i:])
+    if base_domain in settings.EXCLUDE:
+      return None
+
+  for i in range(0, len(domain_splitted)):
     base_domain = '.'.join(domain_splitted[i:])
     if base_domain in settings.domain_health.keys():
       return base_domain.lower()
